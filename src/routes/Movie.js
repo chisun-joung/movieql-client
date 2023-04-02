@@ -9,6 +9,7 @@ const GET_MOVIE = gql`
       id
       poster_path
       vote_average
+      isLiked @client
     }
   }
 `;
@@ -38,10 +39,6 @@ const Subtitle = styled.h4`
   margin-bottom: 10px;
 `;
 
-const Description = styled.p`
-  font-size: 28px;
-`;
-
 const Image = styled.div`
   width: 25%;
   height: 60%;
@@ -54,16 +51,35 @@ const Image = styled.div`
 
 export default function Movie() {
   const { id } = useParams();
-  const { loading, data } = useQuery(GET_MOVIE, {
+  const {
+    loading,
+    data,
+    client: { cache },
+  } = useQuery(GET_MOVIE, {
     variables: { id },
   });
+  const onClick = () => {
+    cache.writeFragment({
+      id: `Movie:${id}`,
+      fragment: gql`
+        fragment isLiked on Movie {
+          isLiked
+        }
+      `,
+      data: {
+        isLiked: !data.movie.isLiked,
+      },
+    });
+  };
 
-  console.log(data);
   return (
     <Container>
       <Column>
         <Title>{loading ? "Loading..." : `${data.movie?.title}`}</Title>
         <Subtitle>⭐️ {data?.movie?.vote_average}</Subtitle>
+        <button onClick={onClick}>
+          {data?.movie?.isLiked ? "Unlike" : "Liked"}
+        </button>
       </Column>
       <Image
         bg={`https://image.tmdb.org/t/p/original/${data?.movie?.poster_path}`}
